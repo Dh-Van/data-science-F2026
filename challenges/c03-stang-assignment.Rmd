@@ -26,7 +26,7 @@ Unlike exercises, **challenges will be graded**. The following rubrics define ho
 <!-- ------------------------- -->
 
 | Category | Needs Improvement | Satisfactory |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | Effort | Some task **q**'s left unattempted | All task **q**'s attempted |
 | Observed | Did not document observations, or observations incorrect | Documented correct observations based on analysis |
 | Supported | Some observations not clearly supported by analysis | All observations clearly supported by analysis (table, graph, etc.) |
@@ -71,7 +71,16 @@ Note that these data are not tidy! The data in this form are convenient for repo
 ```{r q1-task}
 ## TASK: Tidy `df_stang`
 df_stang_long <-
-  df_stang
+  df_stang |> 
+  pivot_longer(
+    cols = starts_with(c("E_", "nu_")),
+    names_sep = "_",
+    names_to = c(".value", "angle"),
+    names_transform = list(angle = as.integer)
+  ) |> 
+  filter(
+    E > 0 & nu > 0
+  )
 
 df_stang_long
 ```
@@ -108,20 +117,39 @@ print("Very good!")
 ### **q2** Perform a basic EDA on the aluminum data *without visualization*. Use your analysis to answer the questions under *observations* below. In addition, add your own *specific* question that you'd like to answer about the data---you'll answer it below in q3.
 
 ```{r q2-task}
-##
+df_stang_long 
+df_stang_thicknesses <-
+  df_stang_long |> 
+    group_by(thick) |> 
+  summarize(n = n(), E_mean = mean(E), nu_mean = mean(nu))
+
+df_stang_angles <-
+  df_stang_long |> 
+  group_by(angle) |> 
+  summarize(n = n(), E_mean = mean(E), nu_mean = mean(nu))
+
+df_stang_alloy <-
+  df_stang_long |> 
+  group_by(alloy) |> 
+  summarize(n = n(), E_mean = mean(E), nu_mean = mean(nu))
+
+df_stang_thicknesses
+df_stang_angles
+df_stang_alloy
 ```
 
 **Observations**:
 
 - Is there "one true value" for the material properties of Aluminum?
-  - (Your response here)
+  - Doesn't look like it. If there was, every row would have the same E and nu and they clearly don't. E goes from about 9900 to 10700 and nu goes from about 0.31 to 0.33. Looking at the thickness table the 0.081 plates have a mean E of about 10000 and the other three are all around 10400 to 10600, so it's not even like the variation is random noise around one number, it moves with thickness. Probably there is some true value for a perfect chunk of aluminum but every real plate is a little different depending on how it was made.
 - How many aluminum alloys are in this dataset? How do you know?
-  - (Your response here)
+  - Just one, al_24st. When I group by alloy I only get one row back with all 26 measurements in it.
 - What angles were tested?
-  - (Your response here)
+  - 0, 45 and 90 degrees. The angle table has 3 rows. 0 and 90 have 9 measurements each and 45 only has 8, because the one 45 degree test I filtered out in q1 was the invalid -1 row.
 - What thicknesses were tested?
-  - (Your response here)
-- (Write your own question here)
+  - 0.022, 0.032, 0.064 and 0.081 inches. The first three have 6 measurements each and 0.081 has 8
+- Does plate thickness or test angle have a bigger effect on E and nu?
+  - From the tables it looks like thickness. The angle table means are all within about 70 of each other (10290 to 10360) but the thickness table has the 0.081 plates about 500 lower than everything else. I want to plot it to make sure that's not just the means hiding something.
 
 ## Visualize
 
@@ -131,11 +159,49 @@ print("Very good!")
 
 ```{r q3-task}
 ## TASK: Investigate your question from q1 here
+df_stang_long |>
+  ggplot(aes(x = as_factor(thick), y = E)) +
+  geom_boxplot() +
+  geom_point(aes(colour = as_factor(angle)), size = 3) +
+  labs(
+    x = "Plate thickness (in)",
+    y = "Elastic modulus E (ksi)",
+    colour = "Angle (deg)"
+  )
+```
+
+```{r q3-angle}
+df_stang_long |>
+  ggplot(aes(x = as_factor(angle), y = E)) +
+  geom_boxplot() +
+  geom_point(aes(colour = as_factor(thick)), size = 3) +
+  labs(
+    x = "Angle from rolling direction (deg)",
+    y = "Elastic modulus E (ksi)",
+    colour = "Thickness (in)"
+  )
+```
+
+```{r q3-nu}
+df_stang_long |>
+  ggplot(aes(x = as_factor(thick), y = nu)) +
+  geom_boxplot() +
+  geom_point(aes(colour = as_factor(angle)), size = 3) +
+  labs(
+    x = "Plate thickness (in)",
+    y = "Poisson's ratio nu",
+    colour = "Angle (deg)"
+  )
 ```
 
 **Observations**:
 
-- (Address your question from q1 here)
+- First plot is E by thickness. The 0.081 box is sitting completely under the other three, the top of it is lower than the bottom of any other box. The thin plates are all around 10500 and the thick ones are around 10000, so about 5% lower. The other three thicknesses overlap each other a lot so I wouldn't say there's a trend across them, it's more like 0.081 is different and the rest are the same.
+- Inside each box the colors (angle) are all mixed up. There isn't a color that's always on top or always on the bottom, so angle doesn't seem to be doing anything within a thickness.
+- Second plot is the same data but with angle on the x axis. The three boxes are basically the same height and they overlap almost entirely. But every box has the purple 0.081 dots at the very bottom. So the spread inside each angle group is really just the thickness effect showing up again, not something angle is doing.
+- Third plot is nu by thickness and it's the same story but smaller. The 0.081 plates are at about 0.31 and the rest are at about 0.32 to 0.33. Again the angle colors are mixed.
+- So to answer my question, thickness has a much bigger effect than angle. Angle barely does anything I can see.
+- The thing I can't answer from this data is whether it's actually thickness that's causing it. There's only 3 plates at 0.081 and 2 at each of the others, and it's all one alloy. All three 0.081 plates could have come from the same batch of metal that just happened to be a little softer. Since every thick plate is in that batch there's no way to separate "thick" from "that batch". To actually pin it on thickness I'd want plates of each thickness from a couple different batches, or one thick sheet ground down to the thinner sizes so the metal is identical and only the thickness changes.
 
 ### **q4** Consider the following statement:
 
@@ -155,9 +221,9 @@ df_stang_long %>%
 **Observations**:
 
 - Does this graph support or contradict the claim above?
-  - (Your response here)
+  - Contradicts it, at least for this data. If E didn't depend on the amount of material then the colors would be all mixed together on the plot. Instead the 0.081 points are off in their own cluster in the bottom left, lower E and lower nu than everything else. The other three thicknesses are jumbled together in the top right which is what you'd expect if E was intensive, so it's really only the thickest plates that break the pattern.
 - Is this evidence *conclusive* one way or another?
-  - (Your response here)
+  - No. Same problem as q3, it's one alloy and 2 or 3 plates per thickness. The whole contradiction rests on 3 plates that could all be from one batch. A different batch that was slightly off would look exactly like this and have nothing to do with thickness. Also the thin plates going 0.022 to 0.064 don't show any trend at all, so if thickness really mattered I'd expect to see at least a little movement across those and there isn't any. To be conclusive you'd want more plates at each thickness from different batches, and ideally some thicknesses between 0.064 and 0.081 to see if E drops gradually or just falls off a cliff.
 
 # References
 
