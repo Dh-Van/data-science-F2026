@@ -1,0 +1,437 @@
+Antibiotics
+================
+(Your name here)
+2020-
+
+*Purpose*: Creating effective data visualizations is an *iterative*
+process; very rarely will the first graph you make be the most
+effective. The most effective thing you can do to be successful in this
+iterative process is to *try multiple graphs* of the same data.
+
+Furthermore, judging the effectiveness of a visual is completely
+dependent on *the question you are trying to answer*. A visual that is
+totally ineffective for one question may be perfect for answering a
+different question.
+
+In this challenge, you will practice *iterating* on data visualization,
+and will anchor the *assessment* of your visuals using two different
+questions.
+
+*Note*: Please complete your initial visual design **alone**. Work on
+both of your graphs alone, and save a version to your repo *before*
+coming together with your team. This way you can all bring a diversity
+of ideas to the table!
+
+<!-- include-rubric -->
+
+# Grading Rubric
+
+<!-- -------------------------------------------------- -->
+
+Unlike exercises, **challenges will be graded**. The following rubrics
+define how you will be graded, both on an individual and team basis.
+
+## Individual
+
+<!-- ------------------------- -->
+
+| Category | Needs Improvement | Satisfactory |
+|----|----|----|
+| Effort | Some task **q**’s left unattempted | All task **q**’s attempted |
+| Observed | Did not document observations, or observations incorrect | Documented correct observations based on analysis |
+| Supported | Some observations not clearly supported by analysis | All observations clearly supported by analysis (table, graph, etc.) |
+| Assessed | Observations include claims not supported by the data, or reflect a level of certainty not warranted by the data | Observations are appropriately qualified by the quality & relevance of the data and (in)conclusiveness of the support |
+| Specified | Uses the phrase “more data are necessary” without clarification | Any statement that “more data are necessary” specifies which *specific* data are needed to answer what *specific* question |
+| Code Styled | Violations of the [style guide](https://style.tidyverse.org/) hinder readability | Code sufficiently close to the [style guide](https://style.tidyverse.org/) |
+
+## Submission
+
+<!-- ------------------------- -->
+
+Make sure to commit both the challenge report (`report.md` file) and
+supporting files (`report_files/` folder) when you are done! Then submit
+a link to Canvas. **Your Challenge submission is not complete without
+all files uploaded to GitHub.**
+
+``` r
+library(tidyverse)
+```
+
+    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+    ## ✔ dplyr     1.2.1     ✔ readr     2.2.0
+    ## ✔ forcats   1.0.1     ✔ stringr   1.6.0
+    ## ✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+    ## ✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+    ## ✔ purrr     1.2.2     
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
+    ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+
+``` r
+library(ggrepel)
+```
+
+*Background*: The data\[1\] we study in this challenge report the
+[*minimum inhibitory
+concentration*](https://en.wikipedia.org/wiki/Minimum_inhibitory_concentration)
+(MIC) of three drugs for different bacteria. The smaller the MIC for a
+given drug and bacteria pair, the more practical the drug is for
+treating that particular bacteria. An MIC value of *at most* 0.1 is
+considered necessary for treating human patients.
+
+These data report MIC values for three antibiotics—penicillin,
+streptomycin, and neomycin—on 16 bacteria. Bacteria are categorized into
+a genus based on a number of features, including their resistance to
+antibiotics.
+
+``` r
+## NOTE: If you extracted all challenges to the same location,
+## you shouldn't have to change this filename
+filename <- "./data/antibiotics.csv"
+
+## Load the data
+df_antibiotics <- read_csv(filename)
+```
+
+    ## Rows: 16 Columns: 5
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (2): bacteria, gram
+    ## dbl (3): penicillin, streptomycin, neomycin
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+df_antibiotics %>% knitr::kable()
+```
+
+| bacteria                        | penicillin | streptomycin | neomycin | gram     |
+|:--------------------------------|-----------:|-------------:|---------:|:---------|
+| Aerobacter aerogenes            |    870.000 |         1.00 |    1.600 | negative |
+| Brucella abortus                |      1.000 |         2.00 |    0.020 | negative |
+| Bacillus anthracis              |      0.001 |         0.01 |    0.007 | positive |
+| Diplococcus pneumonia           |      0.005 |        11.00 |   10.000 | positive |
+| Escherichia coli                |    100.000 |         0.40 |    0.100 | negative |
+| Klebsiella pneumoniae           |    850.000 |         1.20 |    1.000 | negative |
+| Mycobacterium tuberculosis      |    800.000 |         5.00 |    2.000 | negative |
+| Proteus vulgaris                |      3.000 |         0.10 |    0.100 | negative |
+| Pseudomonas aeruginosa          |    850.000 |         2.00 |    0.400 | negative |
+| Salmonella (Eberthella) typhosa |      1.000 |         0.40 |    0.008 | negative |
+| Salmonella schottmuelleri       |     10.000 |         0.80 |    0.090 | negative |
+| Staphylococcus albus            |      0.007 |         0.10 |    0.001 | positive |
+| Staphylococcus aureus           |      0.030 |         0.03 |    0.001 | positive |
+| Streptococcus fecalis           |      1.000 |         1.00 |    0.100 | positive |
+| Streptococcus hemolyticus       |      0.001 |        14.00 |   10.000 | positive |
+| Streptococcus viridans          |      0.005 |        10.00 |   40.000 | positive |
+
+# Visualization
+
+<!-- -------------------------------------------------- -->
+
+### **q1** Prototype 5 visuals
+
+To start, construct **5 qualitatively different visualizations of the
+data** `df_antibiotics`. These **cannot** be simple variations on the
+same graph; for instance, if two of your visuals could be made identical
+by calling `coord_flip()`, then these are *not* qualitatively different.
+
+For all five of the visuals, you must show information on *all 16
+bacteria*. For the first two visuals, you must *show all variables*.
+
+*Hint 1*: Try working quickly on this part; come up with a bunch of
+ideas, and don’t fixate on any one idea for too long. You will have a
+chance to refine later in this challenge.
+
+*Hint 2*: The data `df_antibiotics` are in a *wide* format; it may be
+helpful to `pivot_longer()` the data to make certain visuals easier to
+construct.
+
+#### Visual 1 (All variables)
+
+In this visual you must show *all three* effectiveness values for *all
+16 bacteria*. This means **it must be possible to identify each of the
+16 bacteria by name.** You must also show whether or not each bacterium
+is Gram positive or negative.
+
+``` r
+df_long <-
+  df_antibiotics |>
+  mutate(bacteria = fct_reorder(bacteria, penicillin)) |>
+  pivot_longer(
+    cols = c(penicillin, streptomycin, neomycin),
+    names_to = "antibiotic",
+    values_to = "mic"
+  ) |>
+  mutate(antibiotic = fct_relevel(antibiotic, "penicillin", "streptomycin"))
+
+df_long |>
+  ggplot(aes(mic, bacteria, color = antibiotic)) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 0.1, linetype = "dashed") +
+  scale_x_log10() +
+  facet_grid(gram ~ ., scales = "free_y", space = "free_y") +
+  theme_minimal() +
+  labs(
+    x = "MIC (log scale), dashed line is the 0.1 treatment cutoff",
+    y = NULL,
+    color = "Antibiotic"
+  )
+```
+
+![](c05-antibiotics-assignment_files/figure-gfm/q1.1-1.png)<!-- -->
+
+#### Visual 2 (All variables)
+
+In this visual you must show *all three* effectiveness values for *all
+16 bacteria*. This means **it must be possible to identify each of the
+16 bacteria by name.** You must also show whether or not each bacterium
+is Gram positive or negative.
+
+Note that your visual must be *qualitatively different* from *all* of
+your other visuals.
+
+``` r
+df_long |>
+  ggplot(aes(antibiotic, mic, group = bacteria, color = gram)) +
+  geom_line(alpha = 0.7) +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 0.1, linetype = "dashed") +
+  geom_text_repel(
+    data = . %>% filter(antibiotic == "neomycin"),
+    mapping = aes(label = bacteria),
+    size = 3,
+    direction = "y",
+    nudge_x = 0.3,
+    hjust = 0,
+    segment.alpha = 0.3
+  ) +
+  scale_y_log10() +
+  expand_limits(x = 5) +
+  theme_minimal() +
+  labs(
+    x = NULL,
+    y = "MIC (log scale)",
+    color = "Gram stain"
+  )
+```
+
+![](c05-antibiotics-assignment_files/figure-gfm/q1.2-1.png)<!-- -->
+
+#### Visual 3 (Some variables)
+
+In this visual you may show a *subset* of the variables (`penicillin`,
+`streptomycin`, `neomycin`, `gram`), but you must still show *all 16
+bacteria*.
+
+Note that your visual must be *qualitatively different* from *all* of
+your other visuals.
+
+``` r
+df_antibiotics |>
+  ggplot(aes(penicillin, streptomycin, color = gram)) +
+  geom_point(size = 3) +
+  geom_text_repel(aes(label = bacteria), size = 3, max.overlaps = 20) +
+  geom_vline(xintercept = 0.1, linetype = "dashed") +
+  geom_hline(yintercept = 0.1, linetype = "dashed") +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_minimal() +
+  labs(
+    x = "Penicillin MIC (log scale)",
+    y = "Streptomycin MIC (log scale)",
+    color = "Gram stain"
+  )
+```
+
+![](c05-antibiotics-assignment_files/figure-gfm/q1.3-1.png)<!-- -->
+
+#### Visual 4 (Some variables)
+
+In this visual you may show a *subset* of the variables (`penicillin`,
+`streptomycin`, `neomycin`, `gram`), but you must still show *all 16
+bacteria*.
+
+Note that your visual must be *qualitatively different* from *all* of
+your other visuals.
+
+``` r
+df_long |>
+  ggplot(aes(gram, mic)) +
+  geom_boxplot() +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0.1, linetype = "dashed") +
+  scale_y_log10() +
+  facet_wrap(~ antibiotic) +
+  theme_minimal() +
+  labs(
+    x = "Gram stain",
+    y = "MIC (log scale)"
+  )
+```
+
+![](c05-antibiotics-assignment_files/figure-gfm/q1.4-1.png)<!-- -->
+
+#### Visual 5 (Some variables)
+
+In this visual you may show a *subset* of the variables (`penicillin`,
+`streptomycin`, `neomycin`, `gram`), but you must still show *all 16
+bacteria*.
+
+Note that your visual must be *qualitatively different* from *all* of
+your other visuals.
+
+``` r
+df_antibiotics |>
+  mutate(bacteria = fct_reorder(bacteria, penicillin)) |>
+  ggplot(aes(penicillin, bacteria, fill = gram)) +
+  geom_col() +
+  geom_vline(xintercept = 0.1, linetype = "dashed") +
+  scale_x_log10() +
+  theme_minimal() +
+  labs(
+    x = "Penicillin MIC (log scale)",
+    y = NULL,
+    fill = "Gram stain"
+  )
+```
+
+![](c05-antibiotics-assignment_files/figure-gfm/q1.5-1.png)<!-- -->
+
+### **q2** Assess your visuals
+
+There are **two questions** below; use your five visuals to help answer
+both Guiding Questions. Note that you must also identify which of your
+five visuals were most helpful in answering the questions.
+
+*Hint 1*: It’s possible that *none* of your visuals is effective in
+answering the questions below. You may need to revise one or more of
+your visuals to answer the questions below!
+
+*Hint 2*: It’s **highly unlikely** that the same visual is the most
+effective at helping answer both guiding questions. **Use this as an
+opportunity to think about why this is.**
+
+#### Guiding Question 1
+
+> How do the three antibiotics vary in their effectiveness against
+> bacteria of different genera and Gram stain?
+
+*Observations*
+
+- What is your response to the question above?
+  - First thing I had to deal with is that the MIC numbers span about 6
+    orders of magnitude, 0.001 up to 870. On a linear axis everything
+    under 1 collapses into the baseline, so I put every plot on a log
+    scale. All the comparisons below are ratios, not differences.
+  - Penicillin splits on Gram stain. All 9 gram negative bacteria are
+    above the 0.1 cutoff, most of them way above, up around 800 to 870.
+    Almost all the gram positive ones are far below it, down around
+    0.001 to 0.03. The two medians are 100 and 0.005, so about 4 orders
+    of magnitude apart. In visual 4 the two penicillin boxes don’t
+    overlap at all.
+  - Treating 0.1 as the spec, penicillin basically acts like a pass/fail
+    test on Gram stain. If I had to pick one number to separate the two
+    groups it’d be a penicillin MIC around 0.1, and that misclassifies
+    exactly one bacterium.
+  - That one is Streptococcus fecalis. Gram positive but its penicillin
+    MIC is 1, over the cutoff. It’s also the only thing bridging the
+    gap, the next highest gram positive is 0.03 and the lowest gram
+    negative is 1. Take fecalis out and the two groups don’t touch at
+    all.
+  - Streptomycin and neomycin don’t split by Gram stain at all. In
+    visual 4 their boxes overlap almost completely and both medians sit
+    right around the cutoff. For those two the Gram stain tells you
+    basically nothing.
+  - Counting how many bacteria each drug gets under 0.1: neomycin 9 out
+    of 16, penicillin 6, streptomycin 4. But penicillin’s 6 are all gram
+    positive while neomycin’s 9 are spread across both types.
+  - On genus, the two Staphylococcus species sit at almost the same spot
+    on all three drugs and all three clear the cutoff for them. The
+    three Streptococcus don’t agree with each other at all. Two of them
+    are way under the cutoff on penicillin and 100x over it on the other
+    two, and fecalis is middling on everything.
+  - There are only 16 bacteria here and most genera show up once. With
+    one bacterium per genus I can’t separate a genus effect from just
+    that one species being weird. I’d want several species per genus,
+    and this data only has that for Streptococcus, Staphylococcus and
+    Salmonella.
+- Which of your visuals above (1 through 5) is **most effective** at
+  helping to answer this question?
+  - Visual 1.
+- Why?
+  - The question asks about two things, Gram stain and genus, and visual
+    1 is the only one that does both. Faceting by gram separates the two
+    groups so you can see the penicillin split, and the names are still
+    on the y axis so I can look at genus patterns like the two
+    Staphylococcus rows.
+  - Visual 4 shows the Gram stain part better, that gap between the
+    penicillin boxes is huge. But it has no names so it says nothing
+    about genus. If the question was only about Gram stain I’d pick 4.
+  - Visuals 3 and 5 only have one or two of the drugs so they can’t
+    compare all three.
+
+#### Guiding Question 2
+
+In 1974 *Diplococcus pneumoniae* was renamed *Streptococcus pneumoniae*,
+and in 1984 *Streptococcus fecalis* was renamed *Enterococcus fecalis*
+\[2\].
+
+> Why was *Diplococcus pneumoniae* was renamed *Streptococcus
+> pneumoniae*?
+
+*Observations*
+
+- What is your response to the question above?
+  - Because its MIC numbers look almost exactly like the other
+    Streptococcus. Diplococcus pneumonia is 0.005 penicillin, 11
+    streptomycin, 10 neomycin. Streptococcus hemolyticus is 0.001,
+    14, 10. Streptococcus viridans is 0.005, 10, 40. All three have the
+    same shape, tiny penicillin number and big numbers for the other two
+    drugs.
+  - In visual 2 the Diplococcus line and the Streptococcus hemolyticus
+    line basically sit on top of each other the whole way across, and
+    viridans runs parallel just above them. Nothing else on that plot
+    does that. The background says genus is decided partly on resistance
+    to antibiotics, so if a bacterium reacts to all three drugs the same
+    way the Streptococcus do, that’s an argument it belongs in that
+    group.
+  - Streptococcus fecalis doesn’t match. It’s 1, 1, 0.1, a flat line in
+    visual 2 while the other three shoot upward. So it was already the
+    odd one out in its own genus before anyone renamed it, and the
+    prompt says it became Enterococcus later.
+  - This is three numbers on one bacterium though. With 16 rows and 3
+    columns, two things landing close on all three could just be luck,
+    and I don’t have a way to check that from this data. Real
+    reclassification would use way more than antibiotic resistance and I
+    don’t know what else went into it. The data fits the rename, that’s
+    all I can say from here.
+- Which of your visuals above (1 through 5) is **most effective** at
+  helping to answer this question?
+  - Visual 2.
+- Why?
+  - I need to compare whole profiles here, not single numbers. In visual
+    2 each bacterium is a line across the three drugs, so two that act
+    the same end up as two lines sitting on top of each other. You just
+    see it.
+  - Visual 1 has the same information. The Diplococcus row even sits
+    right between viridans and hemolyticus because I sorted by
+    penicillin. But I have to check three dot positions across three
+    rows to catch it, which is slower and easy to miss.
+  - Visual 3 is a decent runner up, those three cluster in the top left
+    away from everything else. It drops neomycin though.
+  - Different visual than question 1, which I didn’t expect going in. I
+    think it’s because question 1 was comparing groups and question 2
+    was matching one thing against a group, and those need different
+    plots.
+
+# References
+
+<!-- -------------------------------------------------- -->
+
+\[1\] Neomycin in skin infections: A new topical antibiotic with wide
+antibacterial range and rarely sensitizing. Scope. 1951;3(5):4-7.
+
+\[2\] Wainer and Lysen, “That’s Funny…” *American Scientist* (2009)
+[link](https://www.americanscientist.org/article/thats-funny)
