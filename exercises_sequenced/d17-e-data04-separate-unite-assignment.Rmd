@@ -121,9 +121,10 @@ tribble(
 ### **q1** Use a combination of `unite` and pivoting to turn `genes` into the same dataframe as `punnett`.
 
 ```{r q1-task}
+genes
 df_q1 <-
   genes %>%
-## TODO: pivot and unite here!
+  
 
 df_q1
 ```
