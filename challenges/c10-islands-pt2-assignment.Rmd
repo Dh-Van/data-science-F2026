@@ -16,17 +16,20 @@ This challenge is deliberately shorter so you have time to collect and analyze y
 *Important note*: While we expect that you did your data collection with your team, you need to complete your own individual report for c10.
 
 <!-- include-rubric -->
+
 # Grading Rubric
+
 <!-- -------------------------------------------------- -->
 
 Unlike exercises, **challenges will be graded**. The following rubrics define how you will be graded, both on an individual and team basis.
 
 ## Individual
+
 <!-- ------------------------- -->
 
 | Category | Needs Improvement | Satisfactory |
-|----------|----------------|--------------|
-| Effort | Some task __q__'s left unattempted | All task __q__'s attempted |
+|----|----|----|
+| Effort | Some task **q**'s left unattempted | All task **q**'s attempted |
 | Observed | Did not document observations, or observations incorrect | Documented correct observations based on analysis |
 | Supported | Some observations not clearly supported by analysis | All observations clearly supported by analysis (table, graph, etc.) |
 | Assessed | Observations include claims not supported by the data, or reflect a level of certainty not warranted by the data | Observations are appropriately qualified by the quality & relevance of the data and (in)conclusiveness of the support |
@@ -34,12 +37,13 @@ Unlike exercises, **challenges will be graded**. The following rubrics define ho
 | Code Styled | Violations of the [style guide](https://style.tidyverse.org/) hinder readability | Code sufficiently close to the [style guide](https://style.tidyverse.org/) |
 
 ## Submission
+
 <!-- ------------------------- -->
 
 Make sure to commit both the challenge report (`report.md` file) and supporting files (`report_files/` folder) when you are done! Then submit a link to Canvas. **Your Challenge submission is not complete without all files uploaded to GitHub.**
 
-
 # Setup
+
 <!-- ----------------------------------------------------------------------- -->
 
 ```{r setup}
@@ -49,54 +53,259 @@ library(rsample)
 # TODO: Include any other packages you need
 ```
 
-### __q1__ Planning a study (TEAMWORK)
+### **q1** Planning a study (TEAMWORK)
 
 While you provided this plan in c08 (Part 1), please include your plan here. In particular, describe how you updated your plan in response to feedback.
 
 #### Population
 
-- (What population are you going to study?)
-  - All of the Islanders? Only the residents of Helvig? Participants meeting certain criteria (in which case, you need to list *covariates*)?
+- All residents of Bjurholm, population 1075. We did not restrict by age, so the sample includes everyone from young children to the very elderly.
 
 #### Quantity of interest
 
-- (Write your quantity of interest here)
+- The change in the number of 2 kg dumbbell curls completed in 30 seconds, measured as the post-treatment count minus the pre-treatment count.
 
 #### Covariates
 
-- (Write any relevant covariates here)
-- (There's probably more than one!)
+- Age, sex, job, personal income, household income, marital status, number of children.
+- Baseline curl count, which is the most important one since we analyze change rather than raw post-test scores.
 
 #### Observation or experiment?
 
 The Islands allows you to ask islanders to complete tasks. If you just take measurements on your participants, then it's an *observational study*. But if you also introduce something that's meant to change the outcome of a measurement (e.g., drinking coffee before taking a test), that's called an *experimental study*. You need to decide whether your study is observational or experimental.
 
-- (Observation or experiment?)
+- Experiment. We randomly assign the monetary incentive and measure each participant before and after.
 
 #### Question / Hypothesis
 
-- (Write your question / hypothesis here)
-  - This could be an observational question, like "How are X and Y related in the population?"
-  - This could be an experimental question, like "What effect does X have on Y in the population?"
+- What effect does offering a monetary incentive have on the number of times a participant can curl a 2 kg weight in 30 seconds?
 
 #### Sampling plan
 
-- (What steps will you take to collect the data?)
-  - Be specific. For instance, if you're going to collect a random sample, how will you enumerate all of the things to be sampled?
-  - Write a protocol. Document step-by-step instructions that your team will follow. That way, you can feasibly split up data collection among the whole team, while making sure each team member doesn't make ad hoc decisions that introduce bias into your results.
+- Protocol:
+  1.  Run our scraper over the Bjurholm village pages to build a complete roster of all 1075 residents, one row per person with an ID plus age, sex, job, income, household income, marital status and number of children.
+  2.  Use `sample()` in R to draw 64 IDs without replacement from that roster.
+  3.  Renumber the 64 selected people 1 to 64, then draw 32 of those at random to form the incentive group. The remaining 32 are the control.
+  4.  If a participant declines, replace them with a fresh random draw from the residents not already selected.
+  5.  Every participant does `Arm Curl Test 30 s` and we record the count.
+  6.  Incentive group: offer the monetary incentive, then repeat the curl test and record the count.
+  7.  Control group: repeat the curl test with no incentive offered, and record the count.
+- How did we update the plan in response to feedback?
+  - Zach asked how we would construct a numbering of all residents. We wrote a scraper and ran it immediately before collection, which gives us a complete and current roster rather than a hand-built list. Doing it right before collection matters because the simulation keeps running and people move and die.
+  - Zach also asked us to justify the sample size statistically rather than only by feasibility. That analysis is below.
 - (How will you ensure the data is representative of your chosen population?)
+  - The scraped roster is a complete sampling frame, so every resident has an equal chance of selection. Drawing with `sample()` rather than picking by hand keeps collectors from choosing convenient participants.
 - (For experiments only: How will you ensure any effects you observe are due to the treatment, and not due to other factors?)
-- (How will you choose your sample size?)
-  - This should be a mix of how confident you want to be in your results, and what is actually *feasible* for your research team.
+  - Treatment is randomly assigned, so the two arms should be alike on everything except the incentive.
+  - Each person is measured before and after, so they serve as their own baseline and we analyze change scores.
+  - We record age and sex so we can check afterwards whether randomization actually balanced the arms.
+- How will you choose your sample size?
+  - Because we measure each person twice, the relevant spread is the standard deviation of the *change*, not of raw curl counts. In our data that is 2.80 curls, against 6.87 for raw counts. The before/after design therefore buys us a lot of precision for the same number of participants.
+  - At 32 per arm, with alpha = 0.05 and 80% power, the smallest difference we can reliably detect is about **2 curls**. Anything smaller than that we would likely miss.
+  - Equivalently as a precision target, 32 per arm gives a 95% confidence interval on the difference of roughly **plus or minus 1.4 curls**.
+  - Sample size needed per arm at 80% power, for a range of effects we might have postulated:
 
-### __q2__ EDA
+| Difference to detect | n per arm | total |
+|----------------------|-----------|-------|
+| 0.5 curls            | 493       | 986   |
+| 1.0 curls            | 124       | 248   |
+| 1.5 curls            | 55        | 110   |
+| 2.0 curls            | 31        | 62    |
+| 3.0 curls            | 14        | 28    |
+
+- Our 64 participants is almost exactly the number required to detect a 2 curl difference, so that is the effect size our study was powered for. Detecting 1 curl would have taken 248 people, which was not feasible for our team.
+
+### **q2** EDA
 
 Conduct an EDA on your data. Add as many code chunks as you need. Ensure your EDA gives enough context of the data for us to understand what comes next in this report.
 
-### __q3__ Key Analyses
+```{r q2-load}
+df_raw <- read_csv("./data/c10_combined.csv")
+
+df_c10 <-
+  df_raw %>%
+  rename(
+    person = `Person #`,
+    house = `House #`,
+    sex = Sex,
+    age = Age,
+    job = Job,
+    income = Income,
+    household_income = `Sum of everyone's census income at the same house number (master column B). Children and others with no income add 0. Household income`,
+    married = Married,
+    children = Children,
+    curls_pre = `Curls 1`,
+    curls_post = `Curls 2`,
+    incentive = Incentive
+  ) %>%
+  mutate(change = curls_post - curls_pre)
+
+df_c10 %>% glimpse()
+```
+
+**Observations**:
+
+- 63 participants, each measured twice. `change` is post minus pre, which is what we actually analyze.
+- 10 people have no `income` and 22 have no `job`. All 10 of the missing incomes are kids aged 4 to 16, so those are real zeros rather than collection failures.
+
+#### Who is in the sample
+
+```{r q2-composition}
+df_c10 %>%
+  ggplot(aes(age)) +
+  geom_histogram(binwidth = 5) +
+  labs(x = "Age", y = "Count")
+
+df_c10 %>%
+  mutate(age_group = cut(age, c(0, 18, 65, 120),
+                         labels = c("under 18", "18 to 65", "over 65"))) %>%
+  group_by(age_group) %>%
+  summarize(
+    n = n(),
+    mean_curls_pre = round(mean(curls_pre), 1),
+    mean_change = round(mean(change), 2)
+  )
+```
+
+**Observations**:
+
+- Age runs from 4 to 111, so we sampled the whole village rather than adults only. 12 participants are under 18 and 5 are over 80.
+- Baseline strength depends a lot on age group. Under 18s average 17.9 curls, 18 to 65 average 30.9, over 65 average 25. That's a big spread to carry into the comparison.
+
+#### Did randomization balance the two arms?
+
+```{r q2-balance}
+df_c10 %>%
+  group_by(incentive) %>%
+  summarize(
+    n = n(),
+    pct_female = round(100 * mean(sex == "female")),
+    mean_age = round(mean(age), 1),
+    mean_curls_pre = round(mean(curls_pre), 1)
+  )
+```
+
+**Observations**:
+
+- Group sizes are even, 31 without the incentive and 32 with.
+- Age balanced well, 42.7 vs 43.1.
+- Sex did not. The no-incentive arm is 65% female and the incentive arm is 41%. That is a 24 point gap from random assignment alone.
+- Baseline strength is also off by 2.4 curls, 28.6 vs 26.2, with the incentive group starting lower. Using change scores instead of raw post-test scores handles this, since each person is compared to their own baseline.
+
+#### The outcome
+
+```{r q2-outcome}
+df_c10 %>%
+  pivot_longer(
+    cols = c(curls_pre, curls_post),
+    names_to = "timing",
+    values_to = "curls"
+  ) %>%
+  mutate(timing = fct_relevel(timing, "curls_pre")) %>%
+  ggplot(aes(timing, curls, color = incentive)) +
+  geom_boxplot() +
+  labs(x = NULL, y = "Curls in 30 seconds", color = "Incentive")
+
+df_c10 %>%
+  ggplot(aes(change, fill = incentive)) +
+  geom_histogram(binwidth = 1, position = "dodge") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(x = "Change in curls (post minus pre)", y = "Count", fill = "Incentive")
+
+df_c10 %>%
+  group_by(incentive) %>%
+  summarize(
+    n = n(),
+    mean_pre = round(mean(curls_pre), 1),
+    mean_post = round(mean(curls_post), 1),
+    mean_change = round(mean(change), 2),
+    sd_change = round(sd(change), 2)
+  )
+```
+
+**Observations**:
+
+- Neither group moved. Mean change is -0.06 without the incentive and -0.19 with it, so both are sitting on zero.
+- The change histograms are centered on zero and overlap almost completely. Both span about -7 to +5.
+- The spread of change (sd around 2.5 to 3) is much larger than the difference between the groups (0.12), which tells us right away that any effect here is small relative to the noise.
+
+#### Does the sex imbalance matter?
+
+```{r q2-sex}
+df_c10 %>%
+  group_by(sex, incentive) %>%
+  summarize(n = n(), mean_change = round(mean(change), 2), .groups = "drop")
+```
+
+**Observations**:
+
+- Sex barely predicts change on its own. Females average +0.03 and males -0.30.
+- Since sex has almost no relationship with the outcome, the 24 point imbalance doesn't do much damage. It would have mattered a lot more if we were comparing raw curl counts instead of change.
+
+### **q3** Key Analyses
 
 Present the key analyses that support your questions / hypotheses. This could include summary statistics (e.g., a proportion of Islanders), grouped summary statistics (e.g., a proportion for group A, and for group B), or visualizations (e.g., a histogram). This section should be short, and every analysis should directly relate to q4.
 
-### __q4__ Answers
+```{r q3-estimate}
+df_c10 %>%
+  group_by(incentive) %>%
+  summarize(
+    n = n(),
+    mean_change = round(mean(change), 2),
+    sd_change = round(sd(change), 2)
+  )
+```
+
+```{r q3-ci}
+set.seed(101)
+
+df_interval <-
+  df_c10 %>%
+  bootstraps(times = 2000) %>%
+  mutate(
+    diff = map_dbl(
+      splits,
+      function(split_df) {
+        a <- analysis(split_df)
+        mean(a$change[a$incentive == "Yes"]) - mean(a$change[a$incentive == "No"])
+      }
+    )
+  )
+
+df_interval %>%
+  summarize(
+    estimate = mean(df_c10$change[df_c10$incentive == "Yes"]) -
+               mean(df_c10$change[df_c10$incentive == "No"]),
+    lo = quantile(diff, 0.025, na.rm = TRUE),
+    hi = quantile(diff, 0.975, na.rm = TRUE)
+  )
+```
+
+```{r q3-vis}
+df_interval %>%
+  ggplot(aes(diff)) +
+  geom_histogram(binwidth = 0.1) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(
+    x = "Bootstrap difference in mean change (incentive minus control)",
+    y = "Count"
+  )
+```
+
+**Observations**:
+
+- The difference in mean change is -0.12 curls, with a 95% bootstrap confidence interval of roughly [-1.47, 1.28].
+- The interval contains zero and is nearly symmetric around it.
+- It is also narrower than the 2 curl effect our design was powered to detect, so this is an informative null rather than a study that simply ran out of resolution.
+
+### **q4** Answers
 
 Connect your Key Analyses to your questions / hypotheses. What did you conclude from your study?
+
+- We found no evidence that a monetary incentive changes arm curl performance. The incentive group did 0.12 fewer curls on average than the control, which is indistinguishable from no difference.
+- Our confidence interval runs from about -1.5 to +1.3 curls. So if an effect exists we can say it is smaller than about 1.5 curls in either direction, which on a baseline of roughly 27 curls is under 6%.
+- This is not simply a failure to find something. Our design was powered to detect 2 curls, and the interval we got is narrower than that, so we can rule out an effect of the size we set out to look for. We cannot rule out a small effect of under 1 curl, which would have needed around 248 participants.
+- Caveats:
+  - Randomization left the arms unbalanced on sex, 65% female in the control against 41% in the incentive group. Sex turned out to barely predict change (+0.03 for females, -0.30 for males), so we do not think this drove the result, but with 63 people we cannot rule it out entirely.
+  - Our population was all of Bjurholm, including 12 children under 18 and 5 people over 80. A monetary incentive may mean something quite different to a 6 year old than to a working adult. A study restricted to working age adults might find an effect that ours averages away.
+  - Both groups did the curl test twice in quick succession, and both ended up slightly below their baseline. That is consistent with mild fatigue affecting everyone equally. Since it hits both arms it should not bias the comparison, but it does mean neither group had much room to improve.
